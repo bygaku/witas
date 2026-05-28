@@ -34,11 +34,15 @@ namespace wit {
 
     /**
      * @brief Gets a pointer to the beginning of the sample buffer for a specific channel.
-     * @param[in,out] audio Target AudioData structure.
-     * @param[in]     ch    The zero-based channel index.
+     * @param[in] audio Target AudioData structure.
+     * @param[in] ch    The zero-based channel index.
      * @return float* Pointer to the first sample of the specified channel.
+     *
+     * @note Provides easy access to any channel via the constants in the channels namespace.
+     * @attention If the specified ch is out of range, it is automatically set to num_channel.
      */
     inline float* Channel(AudioData& audio, std::uint32_t ch) {
+        if (ch > audio.num_channels) ch = audio.num_channels;
         return audio.samples.data() + static_cast<std::size_t>(ch) * audio.frame_count;
     }
 
@@ -47,10 +51,14 @@ namespace wit {
      * @param[in] audio Target AudioData structure.
      * @param[in] ch    The zero-based channel index.
      * @return const float* Read-only pointer to the first sample of the specified channel.
+     *
+     * @note Provides easy access to any channel via the constants in the channels namespace.
+     * @attention If the specified ch is out of range, it is automatically set to num_channel.
      */
     inline const float* Channel(const AudioData& audio, std::uint32_t ch) {
+        if (ch > audio.num_channels) ch = audio.num_channels;
         return audio.samples.data() + static_cast<std::size_t>(ch) * audio.frame_count;
-    };
+    }
 
 }
 

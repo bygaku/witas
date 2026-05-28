@@ -6,9 +6,9 @@ set(PROJ_CODE "wit")    # complete name: wit audio system
 set(LIB_CODE  "wit")    # complete name: wit audio system
 
 project(${PROJ_CODE}
-    VERSION     0.1
-    LANGUAGES   CXX
-    DESCRIPTION "Educational sound middleware for student game development"
+        VERSION     0.1
+        LANGUAGES   CXX
+        DESCRIPTION "Educational sound middleware for student game development"
 )
 
 enable_testing()

@@ -2,17 +2,17 @@
 
 # Pipeline connectivity test
 add_executable(wit_lib
-    test_connectivity.cpp
+        test_connectivity.cpp
+        test_audio_data.cpp
 )
  
 # wit - static library
 target_link_libraries(wit_lib
-    PRIVATE
-    ${LIB_CODE}
+        PRIVATE
+        ${LIB_CODE}
 )
 
 # Register
-add_test(
-    NAME    wit_lib
-    COMMAND $<TARGET_FILE:wit_lib>
+add_test(NAME wit_lib
+        COMMAND $<TARGET_FILE:wit_lib>
 )

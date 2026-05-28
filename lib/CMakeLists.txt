@@ -2,6 +2,10 @@
 
 add_library(${LIB_CODE}
     STATIC
-    src/dummy.cpp
+        src/dummy.cpp
 )
- 
+
+target_include_directories(${LIB_CODE}
+    PUBLIC
+        src/
+)

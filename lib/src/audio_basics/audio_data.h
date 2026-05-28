@@ -5,6 +5,7 @@
 
 #ifndef WIT_AUDIO_DATA_H
 #define WIT_AUDIO_DATA_H
+#include <cassert>
 #include <cstdint>
 #include <vector>
 

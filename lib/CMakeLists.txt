@@ -1,5 +1,6 @@
 # witas/lib/CMakeLists.txt
 set(LIB_SOURCE
+        src/format/load_wav.cpp
 )
 
 set(LIB_INCLUDE_HEADER

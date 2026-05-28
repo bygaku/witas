@@ -49,15 +49,23 @@ struct FmtChunk {
 	uint16_t	bit_depth;		///< Bits per sample.
 };
 
-// The fmt chunk body is exactly 16 bytes in the WAV spec. If the compiler
-// adds padding, reading sizeof(FmtChunk) bytes from the file would misalign.
-// This assert guarantees the struct matches the on-disk layout.
+/**
+ * The fmt chunk body is exactly 16 bytes in the WAV spec. If the compiler
+ * adds padding, reading sizeof(FmtChunk) bytes from the file would misalign.
+ * This assertion guarantees the struct matches the on-disk layout.
+ */
 static_assert(sizeof(FmtChunk) == 16, "FmtChunk must be 16 bytes (no padding)");
 
+/**
+ * @brief The file path and error details are output to the console.
+ * @param path WAV file path
+ * @param reason Error details
+ */
 void ErrorLog(const char* path, const char* reason) {
 	std::fprintf(stderr, "[wit] Wav file load failed: %s (path: %s)\n",
 				 reason, path ? path : "(null)");
 }
+
 }
 
 std::optional<AudioData> LoadWav(const char* file_path) {
@@ -75,9 +83,9 @@ std::optional<AudioData> LoadWav(const char* file_path) {
 	}
 
 	// Get a file size
-	fp.seekg(0, std::ios::end);	///< Move read pointer to end.
+	fp.seekg(0, std::ios::end);	///< Move read pointer to end
 	std::size_t file_size = fp.tellg();
-	fp.seekg(0, std::ios::beg); ///< Move read pointer to begin.
+	fp.seekg(0, std::ios::beg); ///< Move read pointer to begin
 
 	// The file is incomplete
 	if (file_size < static_cast<std::streamoff>(RIFF_HEADER_SIZE)) {
@@ -90,8 +98,8 @@ std::optional<AudioData> LoadWav(const char* file_path) {
 	std::vector<float>							samples_out;
 	std::uint32_t								frame_count_out = 0;
 
-	// Reading a file sequentially.
-	// Loop while a full chunk header (id + size = 8 bytes) can still be read.
+	// Reading a file sequentially
+	// Loop while a full chunk header (id + size = 8 bytes) can still be read
 	while (fp.tellg() >= 0 && fp.tellg() + static_cast<std::streamoff>(CHUNK_HEADER_SIZE) <= file_size) {
 		CHUNK_ID chunk_id{};
 		fp.read(reinterpret_cast<char*>(&chunk_id), sizeof(CHUNK_ID));
@@ -99,7 +107,7 @@ std::optional<AudioData> LoadWav(const char* file_path) {
 		CHUNK_SIZE chunk_size{};
 		fp.read(reinterpret_cast<char*>(&chunk_size), sizeof(CHUNK_SIZE));
 
-		// If either read failed, stop (truncated header).
+		// If either read failed, stop (truncated header)
 		if (!fp) break;
 
 		switch (chunk_id) {
@@ -117,15 +125,15 @@ std::optional<AudioData> LoadWav(const char* file_path) {
 			case FMT_ID: {
 				fp.read(reinterpret_cast<char*>(&fmt_chunk), sizeof(FmtChunk));
 
-				// Skip the extension.
+				// Skip the extension
 				if (chunk_size > sizeof(FmtChunk)) {
 					fp.seekg(static_cast<std::size_t>(chunk_size) - sizeof(FmtChunk), std::ios::cur);
 				}
 				break;
 			}
 			case DATA_ID: {
-				// fmt chunk must have been read before data (standard WAV layout).
-				// If num_channels is still empty, the fmt chunk is missing or came after data.
+				// fmt chunk must have been read before data (standard WAV layout)
+				// If num_channels is still empty, the fmt chunk is missing or came after data
 				if (!fmt_chunk.num_channels) {
 					ErrorLog(file_path, "'data' chunk appeared before a valid 'fmt ' chunk");
 					return std::nullopt;
@@ -166,11 +174,11 @@ std::optional<AudioData> LoadWav(const char* file_path) {
 				const std::uint32_t channels    = fmt_chunk.num_channels;
 				const auto			frame_count = static_cast<std::uint32_t>(total_samples / channels);
 
-				// Read the interleaved 16bit samples (LRLRLR...) into a temporary buffer.
+				// Read the interleaved 16bit samples (LRLRLR...) into a temporary buffer
 				std::vector<int16_t> tmp_buffer(total_samples);
 				fp.read(reinterpret_cast<char*>(tmp_buffer.data()), chunk_size);
 
-				// De-interleave: LRLR... -> planar (LLL...RRR...) directly into samples_out.
+				// De-interleave: LRLR... -> planar (LLL...RRR...) directly into samples_out
 				samples_out.resize(total_samples);
 				for (std::uint32_t frame = 0; frame < frame_count; ++frame) {
 					for (std::uint32_t ch = 0; ch < channels; ++ch) {

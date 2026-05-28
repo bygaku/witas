@@ -13,13 +13,13 @@ namespace wit {
     /**
      * @struct AudioData
      * @brief Holds audio metadata and buffer data.
-     * @note The waveform data (`samples`) is stored in a non-interleaved
+     * @note The waveform data (`samples`) is stored in a non-interleaved.
      */
     struct AudioData {
-        std::uint32_t       sample_rate;    ///< Sampling rate in Hz (e.g., 44100, 48000).
-        std::uint32_t       num_channels;   ///< Number of audio channels.
-        std::uint32_t       frame_count;    ///< Number of audio frames (samples per channel).
-        std::vector<float>  samples;        ///< Contiguous sample buffer. Total size is 'num_channels * frame_count'.
+        std::uint32_t       sample_rate;    ///< Sampling rate in Hz (e.g., 44100, 48000)
+        std::uint32_t       num_channels;   ///< Number of audio channels
+        std::uint32_t       frame_count;    ///< Number of audio frames (samples per channel)
+        std::vector<float>  samples;        ///< Contiguous sample buffer. Total size is 'num_channels * frame_count'
     };
 
     namespace channels {

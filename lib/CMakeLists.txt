@@ -5,7 +5,7 @@ add_library(${LIB_CODE}
         src/dummy.cpp
 )
 
-include_directories(${LIB_CODE}
+target_include_directories(${LIB_CODE}
     PUBLIC
         src/
 )

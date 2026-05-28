@@ -49,6 +49,11 @@ struct FmtChunk {
 	uint16_t	bit_depth;		///< Bits per sample.
 };
 
+// The fmt chunk body is exactly 16 bytes in the WAV spec. If the compiler
+// adds padding, reading sizeof(FmtChunk) bytes from the file would misalign.
+// This assert guarantees the struct matches the on-disk layout.
+static_assert(sizeof(FmtChunk) == 16, "FmtChunk must be 16 bytes (no padding)");
+
 void ErrorLog(const char* path, const char* reason) {
 	std::fprintf(stderr, "[wit] Wav file load failed: %s (path: %s)\n",
 				 reason, path ? path : "(null)");

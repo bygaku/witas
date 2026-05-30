@@ -4,6 +4,7 @@
 add_subdirectory(external)
 
 set(LIB_SOURCE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/format/load_wav.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio_engine.cpp
 )
 

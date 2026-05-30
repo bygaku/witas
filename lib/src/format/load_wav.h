@@ -8,7 +8,7 @@
 
 #include <optional>
 
-#include "../audio_basics/audio_data.h"
+#include "audio_data.h"
 
 namespace wit {
 /**

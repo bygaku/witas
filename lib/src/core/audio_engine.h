@@ -66,9 +66,11 @@ public:
 	 */
 	void Unload(SoundHandle handle);
 
-private:
-	class Impl;	///< Implemented in audio_engine.cpp
+	/**
+	 */
+	struct Impl;	///< Implemented in audio_engine.cpp
 
+private:
 	std::unique_ptr<Impl> impl_;	///< Add implementation not exposed to users
 
 };

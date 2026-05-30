@@ -127,7 +127,17 @@ std::optional<AudioData> LoadWav(const char* file_path) {
 
 				// Skip the extension
 				if (chunk_size > sizeof(FmtChunk)) {
-					fp.seekg(static_cast<std::size_t>(chunk_size) - sizeof(FmtChunk), std::ios::cur);
+case FMT_ID: {
+    if (chunk_size < sizeof(FmtChunk)) {
+        ErrorLog(file_path, "FMT chunk is too small");
+        return std::nullopt;
+    }
+    fp.read(reinterpret_cast<char*>(&fmt_chunk), sizeof(FmtChunk));
+    if (chunk_size > sizeof(FmtChunk)) {
+        fp.seekg(static_cast<std::size_t>(chunk_size) - sizeof(FmtChunk), std::ios::cur);
+    }
+    break;
+}
 				}
 				break;
 			}

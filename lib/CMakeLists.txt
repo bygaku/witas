@@ -4,11 +4,13 @@
 add_subdirectory(external)
 
 set(LIB_SOURCE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio_engine.cpp
 )
 
 set(LIB_INCLUDE_HEADER
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio_basics
         ${CMAKE_CURRENT_SOURCE_DIR}/src/format
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core
 )
 
 add_library(${LIB_CODE}

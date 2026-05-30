@@ -1,4 +1,8 @@
 # witas/lib/CMakeLists.txt
+
+# Fetch third-party data first
+add_subdirectory(external)
+
 set(LIB_SOURCE
 )
 
@@ -14,8 +18,14 @@ add_library(${LIB_CODE}
 )
 
 target_include_directories(${LIB_CODE} PRIVATE
-        ${LIB_INCLLUDE_HEADER}
+        ${LIB_INCLUDE_HEADER}
 )
 target_include_directories(${LIB_CODE} INTERFACE
-        ${LIB_INCLLUDE_HEADER}
+        ${LIB_INCLUDE_HEADER}
+)
+
+# This target don't open to the public to users
+target_link_libraries(${LIB_CODE}
+        PRIVATE
+        miniaudio
 )

@@ -8,8 +8,12 @@
 #include <cstdio>
 #include <atomic>
 #include <cstring>
+#include <unordered_map>
 
+#include "audio_data.h"
+#include "load_wav.h"
 #include "sound_handle.h"
+
 #include "miniaudio.h"
 
 namespace wit {
@@ -17,7 +21,7 @@ namespace wit {
  * @brief
  * @param device
  * @param output
- * @param input
+ * @param input 'WIT' don't need it.
  * @param frame_count
  */
 extern "C" {
@@ -27,32 +31,42 @@ static void WitDataCallback(ma_device* device, void* output,
 
 /** AudioEngine::Impl */
 struct AudioEngine::Impl {
+	/**
+	 */
 	Impl() = default;
+
+	/**
+	 */
 	~Impl() = default;
 
 	/** TODO */
-	ma_device device_{};
 
-	std::atomic<bool> is_started_ = {false};
-	std::atomic<bool> is_stopped_ = {false};
-
+	/**
+	 */
 	void OnAudioCallback(float* output, ma_uint32 frame_count) {
-		// 段階2: 無音を出力する。
-		// ma_device_config で channels=2 / format=f32 を指定するため、
-		// 出力バッファは「frame_count フレーム × 2ch × float32」=
-		// frame_count * 2 * sizeof(float) バイト分。
 		std::memset(output, 0, static_cast<std::size_t>(frame_count) * 2 * sizeof(float));
 	}
+
+	ma_device device_{};						///< Audio stream
+	std::atomic<bool> is_started_ = {false};	///< Is the audio thread started?
+
+	std::unordered_map<uint32_t, AudioData> audio_data_map_;	///< AudioData register
+	uint32_t next_audio_data_id_ = 0;	///< 0 is an invalid id
 };
 
 extern "C" {
+/**
+ * @brief
+ * @param device
+ * @param output
+ * @param input 'WIT' don't need it.
+ * @param frame_count
+ */
 static void WitDataCallback(ma_device* device, void* output,
 							const void* input, ma_uint32 frame_count) {
-	(void)input;
+	(void)input;	///< 'WIT' don't need it.
 	auto* impl = static_cast<AudioEngine::Impl*>(device->pUserData);
 	if (impl == nullptr) {
-		// 通常起きないが、防御的に: pUserData 未設定でコールバックが呼ばれた
-		// 場合は出力バッファをゼロ埋めしてリターン (グリッチを最小化)。
 		std::memset(output, 0, static_cast<std::size_t>(frame_count) * 2 * sizeof(float));
 		return;
 	}
@@ -111,16 +125,24 @@ void AudioEngine::Stop() {
 	impl_->is_started_.store(false, std::memory_order_release);
 }
 
-std::optional<SoundHandle> AudioEngine::LoadSound(const char* path) {
-	(void)path;
-	std::fprintf(stderr, "[wit] AudioEngine::LoadSound() not yet implemented (stage 1)\n");
-	return std::nullopt;
+std::optional<SoundHandle> AudioEngine::LoadSound(const char* file_path) {
+	auto audio = LoadWav(file_path);
+
+	if (!audio.has_value()) {
+		return std::nullopt;
+	}
+
+	return Register(std::move(*audio));
 }
 
 SoundHandle AudioEngine::Register(AudioData&& audio) {
-	(void)audio;
-	std::fprintf(stderr, "[wit] AudioEngine::Register() not yet implemented (stage 1)\n");
-	return SoundHandle{};
+	auto id = impl_->next_audio_data_id_++;
+	impl_->audio_data_map_[id] = std::move(audio);
+
+	SoundHandle handle;
+	handle.id_ = id;
+	
+	return handle;
 }
 
 void AudioEngine::Play(SoundHandle handle) {

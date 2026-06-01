@@ -64,7 +64,7 @@ public:
 	 * @param handle
 	 * @note A sound handle that is currently playing will be unloaded after it stops.
 	 */
-	void Unload(SoundHandle handle);
+	void UnloadSound(SoundHandle handle);
 
 	/**
 	 */

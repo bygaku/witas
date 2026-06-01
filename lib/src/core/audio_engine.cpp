@@ -149,8 +149,18 @@ void AudioEngine::Play(SoundHandle handle) {
 	(void)handle;
 }
 
-void AudioEngine::Unload(SoundHandle handle) {
-	(void)handle;
+void AudioEngine::UnloadSound(SoundHandle handle) {
+	assert(handle.IsValid());
+
+	auto itr = impl_->audio_data_map_.find(handle.id_);
+	assert(itr != impl_->audio_data_map_.end());
+
+	if (itr == impl_->audio_data_map_.end()) {
+		return;
+	}
+	/** TODO: If playback is in progress, pause it. */
+
+	impl_->audio_data_map_.erase(itr);
 }
 
 }

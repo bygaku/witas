@@ -25,6 +25,7 @@ public:
 	SoundHandle() = default;
 
 	/**
+	 * @brief Check whether SoundHandle is enabled.
 	 */
 	bool IsValid() const { return id_ != 0; }
 

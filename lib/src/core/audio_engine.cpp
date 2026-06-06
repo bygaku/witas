@@ -52,6 +52,10 @@ struct AudioEngine::Impl {
 
 	std::unordered_map<uint32_t, AudioData> audio_data_map_;	///< AudioData register
 	uint32_t next_audio_data_id_ = 0;	///< 0 is an invalid id
+
+	std::atomic<const AudioData*> pending_play_{nullptr};		///< Only the PlaySound method is written
+	const AudioData*              current_audio_	= nullptr;	///< Only the audio thread should access it
+	std::uint32_t                 current_play_pos_ = 0;		///< Only the audio thread should access it
 };
 
 extern "C" {
@@ -70,6 +74,11 @@ static void WitDataCallback(ma_device* device, void* output,
 		std::memset(output, 0, static_cast<std::size_t>(frame_count) * 2 * sizeof(float));
 		return;
 	}
+
+	/** TODO 6/5: */
+
+	/** TODO 6/5: Interleave transformation. */
+
 	impl->OnAudioCallback(static_cast<float*>(output), frame_count);
 }
 }
@@ -145,8 +154,15 @@ SoundHandle AudioEngine::Register(AudioData&& audio) {
 	return handle;
 }
 
-void AudioEngine::Play(SoundHandle handle) {
-	(void)handle;
+void AudioEngine::PlaySound(SoundHandle handle) {
+	assert(handle.IsValid());
+
+	auto itr = impl_->audio_data_map_.find(handle.id_);
+	assert(itr != impl_->audio_data_map_.end());
+	if (itr == impl_->audio_data_map_.end()) return;
+
+	const AudioData* audio_ptr = &itr->second;
+	impl_->pending_play_.store(audio_ptr, std::memory_order_release);
 }
 
 void AudioEngine::UnloadSound(SoundHandle handle) {
@@ -154,10 +170,8 @@ void AudioEngine::UnloadSound(SoundHandle handle) {
 
 	auto itr = impl_->audio_data_map_.find(handle.id_);
 	assert(itr != impl_->audio_data_map_.end());
+	if (itr == impl_->audio_data_map_.end()) return;
 
-	if (itr == impl_->audio_data_map_.end()) {
-		return;
-	}
 	/** TODO: If playback is in progress, pause it. */
 
 	impl_->audio_data_map_.erase(itr);

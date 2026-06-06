@@ -49,15 +49,12 @@ public:
 	 */
 	std::optional<SoundHandle> LoadSound(const char* file_path);
 
-	/**
-	 */
-	SoundHandle Register(AudioData&& audio);
 
 	/**
 	 * Play the sound from 'SoundHandle'.
 	 * @param handle
 	 */
-	void Play(SoundHandle handle);
+	void PlaySound(SoundHandle handle);
 
 	/**
 	 * Release 'SoundHandle' from memory.
@@ -66,6 +63,12 @@ public:
 	 */
 	void UnloadSound(SoundHandle handle);
 
+private:
+	/**
+	 */
+	SoundHandle Register(AudioData&& audio);
+
+public:
 	/**
 	 */
 	struct Impl;	///< Implemented in audio_engine.cpp

@@ -12,3 +12,4 @@
 
 ## マニュアル
 
+###### 🔗: [設計詳細](https://docs.google.com/spreadsheets/d/1XLfnuITffpdV8_LBLjilIwY4OCQIAGANVyKPy2xWPoI/edit?gid=0#gid=0 "WIT - 設計書") 

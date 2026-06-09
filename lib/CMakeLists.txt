@@ -12,6 +12,7 @@ set(LIB_INCLUDE_HEADER
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio_basics
         ${CMAKE_CURRENT_SOURCE_DIR}/src/format
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils
 )
 
 add_library(${LIB_CODE}

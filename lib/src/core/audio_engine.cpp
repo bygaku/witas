@@ -28,6 +28,7 @@ namespace {
  * @brief The types of commands transmitted via RingBuffer.
  */
 enum class CommandType : std::uint8_t {
+	Pending,
 	Play,
 	Pause,
 	Resume,
@@ -53,7 +54,7 @@ using CommandQueue = wit::RingBuffer<Command, 512>;
 }
 
 /**
- * @brief
+ * @brief Forward declaration of callback functions.
  * @param device
  * @param output
  * @param input 'WIT' don't need it.
@@ -79,7 +80,56 @@ struct AudioEngine::Impl {
 	/**
 	 */
 	void OnAudioCallback(float* output, ma_uint32 frame_count) {
-		std::memset(output, 0, static_cast<std::size_t>(frame_count) * 2 * sizeof(float));
+		Command cmd;
+		while (command_queue_.Dequeue(cmd)) {
+			switch (cmd.type) {
+				case CommandType::Pending: {
+					break;
+				}
+				case CommandType::Play: {
+					current_audio_ = cmd.audio;
+					current_play_pos_ = 0;
+					break;
+				}
+				case CommandType::Pause: {
+					current_audio_ = nullptr;
+					break;
+				}
+				case CommandType::Resume: {
+					break;
+				}
+				default: {
+					break;
+				}
+			}
+		}
+
+		if (current_audio_ == nullptr) {
+			std::memset(output, 0, static_cast<std::size_t>(frame_count) * 2 * sizeof(float));
+			return;
+		}
+
+		const std::uint32_t remaining = current_audio_->frame_count - current_play_pos_;
+		const std::uint32_t to_output = (frame_count < remaining) ? frame_count : remaining;
+
+		const float* L = Channel(*current_audio_, channels::LEFT);
+		const float* R = Channel(*current_audio_, channels::RIGHT);
+
+		for (std::uint32_t i = 0; i < to_output; ++i) {
+			output[i * 2 + 0] = L[current_play_pos_ + i];
+			output[i * 2 + 1] = R[current_play_pos_ + i];
+		}
+
+		current_play_pos_ += to_output;
+
+		// Zero padding
+		if (to_output < frame_count) {
+			const std::uint32_t remaining_frames = frame_count - to_output;
+			std::memset(output + to_output * 2, 0,
+				static_cast<std::size_t>(remaining_frames) * 2 * sizeof(float));
+			current_audio_ = nullptr;
+			current_play_pos_ = 0;
+		}
 	}
 
 	ma_device device_{};						///< Audio stream
@@ -91,7 +141,6 @@ struct AudioEngine::Impl {
 	std::unordered_map<uint32_t, AudioData> audio_data_map_;	///< AudioData register
 	uint32_t next_audio_data_id_ = 0;	///< 0 is an invalid id
 
-	std::atomic<const AudioData*> pending_play_{nullptr};		///< Only the PlaySound method is written
 	const AudioData*              current_audio_	= nullptr;	///< Only the audio thread should access it
 	std::uint32_t                 current_play_pos_ = 0;		///< Only the audio thread should access it
 };
@@ -106,16 +155,12 @@ extern "C" {
  */
 static void WitDataCallback(ma_device* device, void* output,
 							const void* input, ma_uint32 frame_count) {
-	(void)input;	///< 'WIT' don't need it.
+	(void)input;	///< 'WIT' don't need it
 	auto* impl = static_cast<AudioEngine::Impl*>(device->pUserData);
 	if (impl == nullptr) {
 		std::memset(output, 0, static_cast<std::size_t>(frame_count) * 2 * sizeof(float));
 		return;
 	}
-
-	/** TODO 6/5: */
-
-	/** TODO 6/5: Interleave transformation. */
 
 	impl->OnAudioCallback(static_cast<float*>(output), frame_count);
 }
@@ -200,7 +245,8 @@ void AudioEngine::PlaySound(SoundHandle handle) {
 	if (itr == impl_->audio_data_map_.end()) return;
 
 	const AudioData* audio_ptr = &itr->second;
-	impl_->pending_play_.store(audio_ptr, std::memory_order_release);
+	const bool result = impl_->command_queue_.Enqueue({CommandType::Play, audio_ptr});
+	assert(result);
 }
 
 void AudioEngine::UnloadSound(SoundHandle handle) {
@@ -210,7 +256,9 @@ void AudioEngine::UnloadSound(SoundHandle handle) {
 	assert(itr != impl_->audio_data_map_.end());
 	if (itr == impl_->audio_data_map_.end()) return;
 
-	/** TODO: If playback is in progress, pause it. */
+	const AudioData* audio_ptr = &itr->second;
+	const bool result = impl_->command_queue_.Enqueue({CommandType::Pause, nullptr});
+	assert(result);
 
 	impl_->audio_data_map_.erase(itr);
 }

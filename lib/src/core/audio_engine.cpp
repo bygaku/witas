@@ -13,10 +13,45 @@
 #include "audio_data.h"
 #include "load_wav.h"
 #include "sound_handle.h"
+#include "ring_buffer.h"
 
 #include "miniaudio.h"
 
 namespace wit {
+
+/**
+ * @namespace CommandQueue
+ */
+namespace {
+/**
+ * @enum CommandType
+ * @brief The types of commands transmitted via RingBuffer.
+ */
+enum class CommandType : std::uint8_t {
+	Play,
+	Pause,
+	Resume,
+};
+
+/**
+ * @struct Command
+ * @brief
+ */
+struct Command {
+	CommandType      type;    ///< Types of Commands.
+	const AudioData* audio;   ///< The target for playback when `type == Play`. Not used in other cases.
+};
+
+static_assert(std::is_trivially_copyable_v<Command>,
+			  "Command must be trivially copyable");
+
+/**
+ * @typedef CommandQueue
+ * @brief The buffer length is 512. Contains a buffer of Command structures.
+*/
+using CommandQueue = wit::RingBuffer<Command, 512>;
+}
+
 /**
  * @brief
  * @param device
@@ -49,6 +84,9 @@ struct AudioEngine::Impl {
 
 	ma_device device_{};						///< Audio stream
 	std::atomic<bool> is_started_ = {false};	///< Is the audio thread started?
+
+	CommandQueue command_queue_;
+
 
 	std::unordered_map<uint32_t, AudioData> audio_data_map_;	///< AudioData register
 	uint32_t next_audio_data_id_ = 0;	///< 0 is an invalid id

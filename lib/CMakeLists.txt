@@ -1,11 +1,18 @@
 # witas/lib/CMakeLists.txt
+
+# Fetch third-party data first
+add_subdirectory(external)
+
 set(LIB_SOURCE
-        src/format/load_wav.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/format/load_wav.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio_engine.cpp
 )
 
 set(LIB_INCLUDE_HEADER
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio_basics
         ${CMAKE_CURRENT_SOURCE_DIR}/src/format
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils
 )
 
 add_library(${LIB_CODE}
@@ -15,8 +22,14 @@ add_library(${LIB_CODE}
 )
 
 target_include_directories(${LIB_CODE} PRIVATE
-        ${LIB_INCLLUDE_HEADER}
+        ${LIB_INCLUDE_HEADER}
 )
 target_include_directories(${LIB_CODE} INTERFACE
-        ${LIB_INCLLUDE_HEADER}
+        ${LIB_INCLUDE_HEADER}
+)
+
+# This target don't open to the public to users
+target_link_libraries(${LIB_CODE}
+        PRIVATE
+        miniaudio
 )

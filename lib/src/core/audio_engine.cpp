@@ -12,7 +12,6 @@
 
 #include "audio_data.h"
 #include "load_wav.h"
-#include "sound_handle.h"
 #include "ring_buffer.h"
 
 #include "miniaudio.h"

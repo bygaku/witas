@@ -10,6 +10,7 @@
 #include <optional>
 
 #include "audio_data.h"
+#include "sound_handle.h"
 
 namespace wit {
 

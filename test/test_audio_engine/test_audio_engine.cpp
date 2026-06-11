@@ -10,7 +10,7 @@
 #include <thread>
 
 int main(int argc, char** argv) {
-	const char*   WAV_PATH = "C:/_Development/audio-dev/witas/test/test_48000.wav";
+	const char*   WAV_PATH = "C:/_Development/audio-dev/witas/test/test_audio_engine/test_48000.wav";
 	constexpr int WAIT_SEC = 10;
 	std::printf("[INFO] wait_seconds = %d\n", WAIT_SEC);
 

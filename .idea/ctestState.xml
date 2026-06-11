@@ -3,6 +3,8 @@
   <component name="CidrCTestProjectState">
     <ctestState>
       <lineNumber testId="path:test/CMakeLists.txt test:pipe_test" value="23" />
+      <lineNumber testId="path:test/test_audio_engine/CMakeLists.txt test:test_audio_engine" value="22" />
+      <lineNumber testId="path:test/test_audio_engine/CMakeLists.txt test:test_audio_engine_float" value="46" />
     </ctestState>
   </component>
 </project>

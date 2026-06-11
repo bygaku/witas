@@ -13,6 +13,9 @@
 
 namespace wit {
 
+/**
+ * @brief About audio file format.
+ */
 namespace {
 constexpr CHUNK_ID RIFF_ID = Chunk_ID('R', 'I', 'F', 'F');	///< 'F' 'F' 'I' 'R'
 constexpr CHUNK_ID WAVE_ID = Chunk_ID('W', 'A', 'V', 'E');	///< 'E' 'V' 'A' 'W'
@@ -22,18 +25,19 @@ constexpr CHUNK_ID DATA_ID = Chunk_ID('d', 'a', 't', 'a');	///< 'a' 't' 'a' 'd'
 
 // ---- Supported WAV file format ---------------------------------------------- ver1.0.0
 constexpr std::uint16_t FORMAT_TYPE_PCM			= 1;		///< Linear PCM
+constexpr std::uint16_t FORMAT_TYPE_IEEE_FLOAT	= 3;		///< float
+
+constexpr std::uint16_t BIT_DEPTH_16			= 16;		///< 16bit
+constexpr std::uint16_t BIT_DEPTH_32			= 32;		///< 32bit
 
 constexpr std::uint16_t REQUIRED_CHANNELS		= 2;		///< stereo only
-constexpr std::uint16_t REQUIRED_BIT_DEPTH		= 16;		///< 16bit only
 constexpr std::uint32_t REQUIRED_SAMPLE_RATE	= 48000;	///< 48kHz only
 
 constexpr std::size_t	RIFF_HEADER_SIZE		= 12;		///< 'RIFF' + size(4) + 'WAVE'
 constexpr std::size_t	CHUNK_HEADER_SIZE		= 8;		///< Size of sub chunk header 'id(4) + size(4)'
 
 #pragma region Unsupported WAV file format - /** @version ver2.0.0 or later */
-/**
-constexpr std::uint16_t FORMAT_TYPE_FLOAT32		= 3;		///< 32bit float
-*/
+/**/
 #pragma endregion
 
 /**
@@ -55,6 +59,12 @@ struct FmtChunk {
  * This assertion guarantees the struct matches the on-disk layout.
  */
 static_assert(sizeof(FmtChunk) == 16, "FmtChunk must be 16 bytes (no padding)");
+}
+
+/**
+ * @brief Utility functions.
+ */
+namespace {
 
 /**
  * @brief The file path and error details are output to the console.
@@ -64,6 +74,46 @@ static_assert(sizeof(FmtChunk) == 16, "FmtChunk must be 16 bytes (no padding)");
 void ErrorLog(const char* path, const char* reason) {
 	std::fprintf(stderr, "[wit] Wav file load failed: %s (path: %s)\n",
 				 reason, path ? path : "(null)");
+}
+
+bool DecodeInt16ToPlanar(std::ifstream& fp, const std::size_t& chunk_size,
+						 const std::uint32_t& channels, const std::uint32_t& frame_count,
+						 std::vector<float>& samples_out) {
+	const std::size_t total_samples = static_cast<std::size_t>(frame_count) * channels;
+
+	std::vector<int16_t> tmp_buffer(total_samples);
+	fp.read(reinterpret_cast<char*>(tmp_buffer.data()), chunk_size);
+	if (!fp) return false;
+
+	samples_out.resize(total_samples);
+	// De-interleave: LRLR... -> planar (LLL...RRR...) directly into samples_out
+	for (std::uint32_t frame = 0; frame < frame_count; ++frame) {
+		for (std::uint32_t ch = 0; ch < channels; ++ch) {
+			samples_out[ch * frame_count + frame] =
+				static_cast<float>(tmp_buffer[frame * channels + ch]) / 32768.0f;
+		}
+	}
+	return true;
+}
+
+bool DecodeFloat32ToPlanar(std::ifstream& fp, const std::size_t& chunk_size,
+						   const std::uint32_t& channels, const std::uint32_t& frame_count,
+						   std::vector<float>& samples_out) {
+	const std::size_t total_samples = static_cast<std::size_t>(frame_count) * channels;
+
+	std::vector<float> tmp_buffer(total_samples);
+	fp.read(reinterpret_cast<char*>(tmp_buffer.data()), chunk_size);
+	if (!fp) return false;
+
+	samples_out.resize(total_samples);
+	// De-interleave: LRLR... -> planar (LLL...RRR...) directly into samples_out
+	for (std::uint32_t frame = 0; frame < frame_count; ++frame) {
+		for (std::uint32_t ch = 0; ch < channels; ++ch) {
+			samples_out[ch * frame_count + frame] =
+				tmp_buffer[frame * channels + ch];
+		}
+	}
+	return true;
 }
 
 }
@@ -144,15 +194,11 @@ std::optional<AudioData> LoadWav(const char* file_path) {
 					return std::nullopt;
 				}
 
-				if (fmt_chunk.format_type != FORMAT_TYPE_PCM ||
-					fmt_chunk.bit_depth   != REQUIRED_BIT_DEPTH) {
-					ErrorLog(file_path, "Unsupported format (only 16bit linear PCM is supported in this version)");
-					return std::nullopt;
-				}
 				if (fmt_chunk.num_channels != REQUIRED_CHANNELS) {
 					ErrorLog(file_path, "Unsupported channel count (only stereo is supported in this version)");
 					return std::nullopt;
 				}
+
 				if (fmt_chunk.sample_rate != REQUIRED_SAMPLE_RATE) {
 					ErrorLog(file_path, "Unsupported sample rate (only 48000 Hz is supported in this version)");
 					return std::nullopt;
@@ -179,17 +225,18 @@ std::optional<AudioData> LoadWav(const char* file_path) {
 				const std::uint32_t channels    = fmt_chunk.num_channels;
 				const auto			frame_count = static_cast<std::uint32_t>(total_samples / channels);
 
-				// Read the interleaved 16bit samples (LRLRLR...) into a temporary buffer
-				std::vector<int16_t> tmp_buffer(total_samples);
-				fp.read(reinterpret_cast<char*>(tmp_buffer.data()), chunk_size);
-
-				// De-interleave: LRLR... -> planar (LLL...RRR...) directly into samples_out
-				samples_out.resize(total_samples);
-				for (std::uint32_t frame = 0; frame < frame_count; ++frame) {
-					for (std::uint32_t ch = 0; ch < channels; ++ch) {
-						samples_out[ch * frame_count + frame] =
-							static_cast<float>(tmp_buffer[frame * channels + ch]) / 32768.0f;
+				// Perform decoding and conversion for each format type
+				if (fmt_chunk.format_type == FORMAT_TYPE_PCM && fmt_chunk.bit_depth == BIT_DEPTH_16) {
+					if (!DecodeInt16ToPlanar(fp, chunk_size, fmt_chunk.num_channels, frame_count, samples_out)) {
+						return std::nullopt;
 					}
+				} else if (fmt_chunk.format_type == FORMAT_TYPE_IEEE_FLOAT && fmt_chunk.bit_depth == BIT_DEPTH_32) {
+					if (!DecodeFloat32ToPlanar(fp, chunk_size,  fmt_chunk.num_channels, frame_count, samples_out)) {
+						return std::nullopt;
+					}
+				} else {
+					ErrorLog(file_path, "Unsupported file (supported: PCM 16bit or IEEE float 32bit)");
+					return std::nullopt;
 				}
 
 				frame_count_out = frame_count;

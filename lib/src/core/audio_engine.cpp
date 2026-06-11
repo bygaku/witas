@@ -227,7 +227,7 @@ std::optional<SoundHandle> AudioEngine::LoadSound(const char* file_path) {
 }
 
 SoundHandle AudioEngine::Register(AudioData&& audio) {
-	auto id = impl_->next_audio_data_id_++;
+	auto id = ++impl_->next_audio_data_id_;
 	impl_->audio_data_map_[id] = std::move(audio);
 
 	SoundHandle handle;

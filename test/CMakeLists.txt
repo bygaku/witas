@@ -1,66 +1,26 @@
 # wit/test/CMakeLists.txt
 
-# Pipeline connectivity test
-add_executable(pipe_test
-        test_connectivity.cpp
+# AudioEngine.
+add_executable(test_audio_engine
+        test_audio_engine.cpp
 )
  
 # wit - static library
-target_link_libraries(pipe_test
+target_link_libraries(test_audio_engine
         PRIVATE
         ${LIB_CODE}
 )
 
-# Register
-add_test(NAME pipe_test
-        COMMAND $<TARGET_FILE:pipe_test>
+find_package(Threads
+        REQUIRED
 )
 
-# AudioData structure test
-add_executable(test_audio_data
-        test_audio_data.cpp
-)
-
-# wit - static library
-target_link_libraries(test_audio_data
+target_link_libraries(test_audio_engine
         PRIVATE
-        ${LIB_CODE}
+        Threads::Threads
 )
 
 # Register
-add_test(NAME test_audio_data
-        COMMAND $<TARGET_FILE:test_audio_data>
-)
-
-# Check whether miniaudio is linked
-add_executable(test_miniaudio_link
-        test_miniaudio_link.cpp
-)
-
-# wit / miniaudio - libraries
-target_link_libraries(test_miniaudio_link
-        PRIVATE
-        ${LIB_CODE}
-        miniaudio
-)
-
-# Register
-add_test(NAME miniaudio_link
-        COMMAND $<TARGET_FILE:test_miniaudio_link>
-)
-
-# miniaudio Audio thread test
-add_executable(test_audio_thread_pipe
-        test_audio_thread_pipe.cpp
-)
-
-# wit - static library
-target_link_libraries(test_audio_thread_pipe
-        PRIVATE
-        ${LIB_CODE}
-)
-
-# Register
-add_test(NAME test_audio_thread_pipe
-        COMMAND $<TARGET_FILE:test_audio_thread_pipe>
+add_test(NAME test_audio_engine
+        COMMAND $<TARGET_FILE:test_audio_engine>
 )
